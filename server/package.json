@@ -18,6 +18,7 @@
     "update": "npm update && npm prune",
     "clean": "rm -rf node_modules/",
     "reinstall": "npm cache clean && npm run clean && npm install",
+    "gulp": "gulp",
     "start": "node server.js",
     "start:debug": "nodemon --inspect server.js",
     "test": "gulp test",

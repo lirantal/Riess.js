@@ -110,15 +110,16 @@ gulp.task('eslint', function () {
 gulp.task('copyLocalEnvConfig', function () {
   var src = [];
   var renameTo = 'local-development.js';
+  var destination = path.join(process.cwd(), 'lib/config/env');
 
   // only add the copy source if our destination file doesn't already exist
-  if (!fs.existsSync('config/env/' + renameTo)) {
-    src.push('config/env/local.example.js');
+  if (!fs.existsSync(destination + '/' + renameTo)) {
+    src.push(destination + '/local.example.js');
   }
 
   return gulp.src(src)
     .pipe(plugins.rename(renameTo))
-    .pipe(gulp.dest('config/env'));
+    .pipe(gulp.dest(destination));
 });
 
 // Make sure upload directory exists
