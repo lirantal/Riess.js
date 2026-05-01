@@ -6,6 +6,7 @@ const bcrypt = require('bcrypt')
 const generatePassword = require('generate-password')
 const owasp = require('owasp-password-strength-test')
 const passport = require('passport')
+const jwt = require('jsonwebtoken')
 
 const UserRepository = require('../repositories/user.repository')
 const UserValidationService = require('./userValidation.service')
@@ -36,6 +37,11 @@ class UserService {
     return this.deserialize(user)
   }
 
+  static async getUserDeserializedByProvider(providerName, providerId) {
+    const user = await UserRepository.getByProvider(providerName, providerId)
+    return this.deserialize(user)
+  }
+
   static async authenticate (email, password) {
     const user = await UserRepository.getByEmail(email)
 
@@ -51,7 +57,6 @@ class UserService {
   }
 
   static async signUp (userObj) {
-
     // Set provider to local
     userObj.provider = 'local'
 
@@ -88,6 +93,8 @@ class UserService {
       userObj.password = await this.hashPassword(userObj.password)
     }
 
+    // @TODO what if user exits? duplicate e-mail or another
+    // database field key
     const user = await UserRepository.create(userObj)
 
     // Remove sensitive data before login
@@ -97,6 +104,31 @@ class UserService {
     user.password = undefined;
     user.salt = undefined;
 
+    // @TODO or do we just return a deserialized user object?
+    // this.deserialize(user)
+    return Promise.resolve(user)
+  }
+
+  static async socialSignUp (userObj) {
+    // Set provider to local
+    userObj.provider = 'external'
+
+    // For security measurement we remove the roles from the req.body object
+    delete userObj.roles
+
+    // @TODO what if user exits? duplicate e-mail or another
+    // database field key
+    const user = await UserRepository.create(userObj)
+
+    // Remove sensitive data before login
+    // @TODO instead of blacklisting unwanted properties we should
+    // instead only return a newly composed object of expected properties
+    // otherwise we return fields from the repository like mongo's __v field
+    user.password = undefined;
+    user.salt = undefined;
+
+    // @TODO or do we just return a dersialized user object?
+    // this.deserialize(user)
     return Promise.resolve(user)
   }
 
@@ -106,6 +138,20 @@ class UserService {
 
   static async hashPassword (password) {
     return bcrypt.hash(String(password), SALT_ROUNDS)
+  }
+
+  static async createToken (user) {
+    // Create the token
+    // @TODO properly create the token with all of its metadata
+    const payload = {
+      id: user.id
+    }
+
+    // @TODO properly sign the token, not with a shared secret (use pubkey instead),
+    // and specify proper expiration, issuer, algorithm, etc.
+    const token = jwt.sign(payload, config.jwt.secret)
+
+    return Promise.resolve(token)
   }
 
   /**

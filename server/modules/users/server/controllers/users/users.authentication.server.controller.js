@@ -9,16 +9,9 @@ const ApiError = require(path.resolve('./lib/helpers/ApiError'))
 const errorHandler = require(path.resolve('./modules/core/server/controllers/errors.server.controller'))
 const mongoose = require('mongoose')
 const passport = require('passport')
-const jwt = require('jsonwebtoken')
 const User = mongoose.model('User')
 
 const UserService = require('../../services/user.service')
-
-// URLs for which user can't be redirected on signin
-var noReturnUrls = [
-  '/authentication/signin',
-  '/authentication/signup'
-];
 
 /**
  * Signup
@@ -59,16 +52,8 @@ exports.token = async function (req, res, next) {
     const password = req.body.password
     const user = await UserService.authenticate(username, password)
 
-    // Create the token and send
-    // @TODO properly create the token with all of its metadata
-    const payload = {
-      id: user.id
-    }
-    // @TODO properly sign the token, not with a shared secret (use pubkey instead),
-    // and specify proper expiration, issuer, algorithm, etc.
-    const token = jwt.sign(payload, config.jwt.secret)
-
-    res.status(200).json({token: token})
+    const token = await UserService.createToken(user)
+    return res.status(200).json({token})
   } catch (err) {
     return next(new ApiError(err.message))
   }
@@ -78,7 +63,7 @@ exports.token = async function (req, res, next) {
  * OAuth provider call
  */
 exports.oauthCall = function (req, res, next) {
-  var strategy = req.params.strategy;
+  const strategy = req.params.strategy;
   passport.authenticate(strategy)(req, res, next);
 };
 
@@ -86,30 +71,28 @@ exports.oauthCall = function (req, res, next) {
  * OAuth callback
  */
 exports.oauthCallback = function (req, res, next) {
-  var strategy = req.params.strategy;
+  const strategy = req.params.strategy
 
   // info.redirect_to contains intended redirect path
-  passport.authenticate(strategy, function (err, user, info) {
-    if (err) {
-      return res.redirect('/authentication/signin?err=' + encodeURIComponent(errorHandler.getErrorMessage(err)));
-    }
-    if (!user) {
-      return res.redirect('/authentication/signin');
+  passport.authenticate(strategy, async function (err, user, info = {}) {
+    if (err || !user) {
+      return res.redirect('/?err=authentication-failed')
     }
 
-    req.login(user, function (err) {
-      if (err) {
-        return res.redirect('/authentication/signin');
-      }
-
-      return res.redirect(info.redirect_to || '/');
-    });
-  })(req, res, next);
-};
+    try {
+      const token = await UserService.createToken(user)
+      res.cookie('token', token)
+      return res.redirect(info.redirect_to || '/')
+    } catch (err) {
+      return res.redirect('/?err=authentication-failed')
+    }
+  })(req, res, next)
+}
 
 /**
  * Helper function to save or update a OAuth user profile
  */
+/*
 exports.saveOAuthUserProfile = function (req, providerUserProfile, done) {
   // Setup info object
   var info = {};
@@ -196,6 +179,7 @@ exports.saveOAuthUserProfile = function (req, providerUserProfile, done) {
     }
   }
 };
+*/
 
 /**
  * Remove OAuth provider

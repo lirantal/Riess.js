@@ -74,8 +74,13 @@ var UserSchema = new Schema({
   },
   username: {
     type: String,
-    unique: 'Username already exists',
-    required: 'Please fill in a username',
+    unique: false,
+    // @TODO username field isnt set as unique by default
+    // since the unique user field will be based on the
+    // e-mail address. if otherwise required in your model
+    // update the schema definition using the example below:
+    // unique: 'Username already exists',
+    // required: 'Please fill in a username',
     // validate: [validateUsername, 'Please enter a valid username: 3+ characters long, non restricted word, characters "_-.", no consecutive dots, does not begin or end with dots, letters a-z and numbers 0-9.'],
     lowercase: true,
     trim: true
