@@ -69,3 +69,7 @@ This approach provides the following benefits:
 Riess is named after [Adam Riess](https://en.wikipedia.org/wiki/Adam_Riess), an astrophysicist who won the Nobel prize for providing evidence that our universe is in a state of accelerated expansion.
 
 Greatly inspired, Riess.js seeks to provide a solid structure and flexible framework for improved developer experience and increased productivity, while staying in par with the accelerated pace of the JavaScript ecosystem.
+
+## Contributing
+
+Please consult [CONTRIBUTING](./CONTRIBUTING.md) for guidelines on contributing to this project.
